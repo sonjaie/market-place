@@ -128,7 +128,7 @@ export default function Home() {
             <Link href="/create">
               <Button className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Create Listing
+                Create Listings
               </Button>
             </Link>
           </div>
