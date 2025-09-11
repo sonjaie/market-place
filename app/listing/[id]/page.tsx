@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Heart, Share2, MapPin, MessageCircle, Calendar } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -47,6 +48,7 @@ export default function ListingDetail() {
 
   const fetchListing = async (id: string) => {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('listings')
         .select('*')
@@ -68,6 +70,7 @@ export default function ListingDetail() {
     setSendingMessage(true);
 
     try {
+      const supabase = getSupabaseClient();
       // Insert message into database
       const { error } = await supabase
         .from('messages')

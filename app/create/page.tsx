@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImagePlus, ArrowLeft } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+
+const STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET || 'images';
 
 const categories = [
   { id: 'vehicles', name: 'Vehicles' },
@@ -64,27 +67,34 @@ export default function CreateListing() {
     }));
   };
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `listings/${fileName}`;
+  const uploadImage = async (file: File): Promise<string> => {
+    const supabase = getSupabaseClient();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `listings/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(filePath, file);
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, file, {
+        upsert: true,
+        cacheControl: '3600',
+        contentType: file.type || 'image/jpeg',
+      });
 
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      return null;
+    if (uploadError) {
+      console.error('Error uploading image:', uploadError);
+      throw new Error(uploadError.message || 'Upload failed');
     }
+
+    const { data } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(filePath);
+
+    if (!data?.publicUrl) {
+      throw new Error('Could not get public URL after upload');
+    }
+
+    return data.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,13 +102,10 @@ export default function CreateListing() {
     setLoading(true);
 
     try {
-      let imageUrl = null;
-      
+      const supabase = getSupabaseClient();
+      let imageUrl = null as string | null;
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
-        if (!imageUrl) {
-          throw new Error('Failed to upload image');
-        }
       }
 
       const { error } = await supabase

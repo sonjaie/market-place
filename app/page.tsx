@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Plus, MapPin, Heart, Share2, Grid3X3, List } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { getSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -50,6 +51,7 @@ export default function Home() {
 
   const fetchListings = async () => {
     try {
+      const supabase = getSupabaseClient();
       const { data, error } = await supabase
         .from('listings')
         .select('*')
